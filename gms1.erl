@@ -5,12 +5,12 @@ start(Name) ->
     Self = self(),
     spawn_link(fun()-> init(Name, Self) end).
 
-init(Name, Master) ->
-    leader(Name, Master, []).
-
 start(Name, Grp) ->
     Self = self(),
-    spawn_link(fun()-> init(Name, Grp, Self) end).    
+    spawn_link(fun()-> init(Name, Grp, Self) end). 
+
+init(Name, Master) ->
+    leader(Name, Master, []).
 
 init(Name, Grp, Master) ->
     Self = self(), 
@@ -24,13 +24,13 @@ init(Name, Grp, Master) ->
 leader(Name, Master, Slaves) ->    
     receive
         {mcast, Msg} ->
-            bcast(Name, ..., ...),  %% TODO: COMPLETE
-            %% TODO: ADD SOME CODE
+            bcast(Name, {msg, Msg}, Slaves),  %% TODO: COMPLETE
+            Master ! {deliver, Msg},
             leader(Name, Master, Slaves);
         {join, Peer} ->
             NewSlaves = lists:append(Slaves, [Peer]),           
-            bcast(Name, ..., ...),  %% TODO: COMPLETE
-            leader(Name, Master, ...);  %% TODO: COMPLETE
+            bcast(Name, {view, self()}, NewSlaves),  %% TODO: COMPLETE
+            leader(Name, Master, NewSlaves);  %% TODO: COMPLETE
         stop ->
             ok;
         Error ->
@@ -43,16 +43,16 @@ bcast(_, Msg, Nodes) ->
 slave(Name, Master, Leader, Slaves) ->    
     receive
         {mcast, Msg} ->
-            %% TODO: ADD SOME CODE
+            Leader ! {mcast, Msg},
             slave(Name, Master, Leader, Slaves);
         {join, Peer} ->
-            %% TODO: ADD SOME CODE
+            Leader ! {join, Peer},
             slave(Name, Master, Leader, Slaves);
         {msg, Msg} ->
-            %% TODO: ADD SOME CODE
+            Master ! {deliver, Msg},
             slave(Name, Master, Leader, Slaves);
         {view, Leader, NewSlaves} ->
-            slave(Name, Master, Leader, ...);  %% TODO: COMPLETE
+            slave(Name, Master, Leader, NewSlaves);  %% TODO: COMPLETE
         stop ->
             ok;
         Error ->
